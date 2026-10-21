@@ -30,7 +30,11 @@ CACHES = {
     "default": (
         {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}
         if REDIS_URL
-        else {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+        else {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            # Default (300) is far too small: one long route caches ~100 weather keys.
+            "OPTIONS": {"MAX_ENTRIES": 10_000},
+        }
     )
 }
 
@@ -44,6 +48,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    # Route geometry makes /plan responses large (~0.5 MB for 1,000 mi); gzip cuts ~70%.
+    "django.middleware.gzip.GZipMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
@@ -61,6 +67,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [],
     "UNAUTHENTICATED_USER": None,
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # Per-IP limits protecting upstream API quotas (spec §3).
+    "DEFAULT_THROTTLE_RATES": {"plan": "30/min", "heatmap": "30/min"},
 }
 
 LANGUAGE_CODE = "en-us"

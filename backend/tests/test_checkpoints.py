@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from checkpoints import Checkpoint, sample_checkpoints
+from checkpoints import Checkpoint, checkpoint_paths, sample_checkpoints
 from checkpoints.geo import EARTH_RADIUS_MI, cumulative_distances_mi, haversine_mi
 from checkpoints.sampler import checkpoint_distances_mi, vertex_times_s
 from routing.types import Route, Step
@@ -165,6 +165,30 @@ def test_falls_back_to_distance_spread_when_steps_do_not_cover_route() -> None:
     gappy = (Step(0, 1, 0, 100),)  # never reaches the last vertex
     assert vertex_times_s(cum, gappy, 3000) == pytest.approx([0, 1000, 3000])
     assert vertex_times_s(cum, (), 3000) == pytest.approx([0, 1000, 3000])
+
+
+# --- per-checkpoint paths (for per-segment map colouring) ---
+def test_checkpoint_paths_are_contiguous_and_cover_the_route() -> None:
+    route = meridian_route(60, 5)
+    cps = sample_checkpoints(route, 25, DEPARTURE)
+    paths = checkpoint_paths(route, cps)
+
+    assert len(paths) == len(cps)
+    assert paths[0][0] == route.coordinates[0]
+    assert paths[-1][-1] == route.coordinates[-1]
+    for prev, cur in zip(paths, paths[1:], strict=False):
+        assert prev[-1] == cur[0]
+    # Path 1 runs mile 25 -> 50: interior vertices are miles 30, 35, 40, 45.
+    assert paths[1][1:-1] == [at_mile(m) for m in (30, 35, 40, 45)]
+    total = sum(cumulative_distances_mi(tuple(p))[-1] for p in paths)
+    assert total == pytest.approx(60)
+
+
+def test_checkpoint_path_excludes_vertex_exactly_at_checkpoint() -> None:
+    route = meridian_route(50, 5)
+    paths = checkpoint_paths(route, sample_checkpoints(route, 25, DEPARTURE))
+    # Vertex at mile 25 is the checkpoint itself, so it appears once (as the end point).
+    assert paths[0][-2] == at_mile(20)
 
 
 # --- validation ---

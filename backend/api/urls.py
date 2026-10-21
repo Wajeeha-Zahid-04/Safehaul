@@ -1,4 +1,8 @@
-from django.urls import URLPattern
+from django.urls import path
 
-# Endpoints (geocode, plan, heatmap) are registered in tickets #3, #7 and #8.
-urlpatterns: list[URLPattern] = []
+from api.views import GeocodeView, PlanView
+
+urlpatterns = [
+    path("geocode", GeocodeView.as_view(), name="geocode"),
+    path("plan", PlanView.as_view(), name="plan"),
+]

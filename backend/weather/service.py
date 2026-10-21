@@ -39,7 +39,9 @@ def weather_at(queries: Sequence[tuple[LatLon, datetime]]) -> list[Weather]:
 
     missing = [ph for ph, key in zip(wanted, keys, strict=True) if key not in found]
     if missing:
-        fresh = _fetch(missing)
+        fetched = _fetch(missing)
+        # Cache only the (point, hour) pairs asked for, not every hour in the fetched range.
+        fresh = {key: fetched[key] for key in keys if key not in found and key in fetched}
         cache.set_many(fresh, CACHE_TTL_S)
         found.update(fresh)
 

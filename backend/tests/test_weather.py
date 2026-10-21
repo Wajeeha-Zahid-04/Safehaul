@@ -4,10 +4,12 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 import responses
+from django.core.cache import cache
 
 from upstream import UpstreamError
 from weather import Weather, forecast_hour, weather_at
 from weather.client import FORECAST_URL, build_params, fetch_hourly, parse_location
+from weather.service import cache_key
 
 H14 = datetime(2026, 10, 22, 14, tzinfo=UTC)
 INCH_UNITS = {
@@ -194,6 +196,19 @@ def test_weather_at_only_fetches_cache_misses() -> None:
     result = weather_at([((41.0, -87.0), H14), ((45.0, -90.0), H14)])
     assert [w.wind_mph for w in result] == [12, 33]
     assert query_of(responses.calls[1])["latitude"] == ["45.00"]
+
+
+@responses.activate
+def test_weather_at_caches_only_requested_point_hours() -> None:
+    h15 = H14 + timedelta(hours=1)
+    responses.get(FORECAST_URL, json=location([H14, h15], wind=12))
+    weather_at([((41.0, -87.0), H14), ((41.0, -87.0), h15)])
+    assert cache.get(cache_key((41.0, -87.0), H14)) is not None
+    assert cache.get(cache_key((41.0, -87.0), h15)) is not None
+
+    responses.get(FORECAST_URL, json=location([H14, h15], wind=12))
+    weather_at([((50.0, -87.0), H14)])  # fetch range is 14:00 only, so nothing extra cached
+    assert cache.get(cache_key((50.0, -87.0), h15)) is None
 
 
 @responses.activate

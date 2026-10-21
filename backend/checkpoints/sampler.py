@@ -6,7 +6,7 @@ the final checkpoint, and each checkpoint owns the miles since the previous one 
 """
 
 import math
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from itertools import pairwise
@@ -100,6 +100,26 @@ def _steps_cover(steps: tuple[Step, ...], last_index: int) -> bool:
     in_order = all(s.start_index <= s.end_index for s in steps)
     contiguous = all(a.end_index == b.start_index for a, b in pairwise(steps))
     return in_order and contiguous
+
+
+def checkpoint_paths(route: Route, checkpoints: list[Checkpoint]) -> list[list[LatLon]]:
+    """Polyline owned by each checkpoint: previous checkpoint (or origin) -> this checkpoint."""
+    cum_mi = cumulative_distances_mi(route.coordinates)
+    paths: list[list[LatLon]] = []
+    start: LatLon = route.coordinates[0]
+    previous_mi = 0.0
+    for cp in checkpoints:
+        # Tolerance keeps a vertex that sits on a checkpoint (up to float noise) from
+        # being repeated next to it.
+        inner = route.coordinates[
+            bisect_right(cum_mi, previous_mi + DISTANCE_EPS_MI) : bisect_left(
+                cum_mi, cp.distance_mi - DISTANCE_EPS_MI
+            )
+        ]
+        end = (cp.lat, cp.lon)
+        paths.append([start, *inner, end])
+        start, previous_mi = end, cp.distance_mi
+    return paths
 
 
 def _interpolate(
