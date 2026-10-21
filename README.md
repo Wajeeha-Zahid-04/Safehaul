@@ -72,7 +72,23 @@ npm run build
 
 ## Risk model
 
-_TBD (ticket #2)._
+Implemented in `backend/risk/rules.py` as `classify(wind_mph, rain_in_hr, snow_in_hr, load_lb) -> (level, reasons)`. Lower bounds are inclusive.
+
+| Level (score) | Wind mph | Rain in/hr | Snow in/hr |
+|---|---|---|---|
+| Low (0) | <25 | <0.10 | <0.5 |
+| Moderate (1) | 25–<35 | 0.10–<0.25 | 0.5–<1.0 |
+| High (2) | 35–<45 | 0.25–<0.50 | 1.0–<2.0 |
+| Severe (3) | 45–<55 | 0.50–≤1.00 | 2.0–≤3.0 |
+| No Travel (4) | ≥55 | >1.00 | >3.0 |
+
+Load overrides (load thresholds are strict, so exactly 30,000 lb does not trigger the first rule):
+
+- Wind ≥55 → No Travel for any load.
+- Wind 45–<55 and load >30,000 lb → No Travel.
+- Wind 35–<45 and load >40,000 lb → Severe.
+
+The checkpoint level is the maximum across all conditions after overrides. `reasons` lists every rule that reached that level.
 
 ## Assumptions
 
