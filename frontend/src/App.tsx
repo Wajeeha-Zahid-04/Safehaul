@@ -2,9 +2,10 @@ import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { planTrip } from './api/client'
 import { MapView } from './components/MapView'
+import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
 
-// RouteCards and HeatmapLayer are added in tickets #11-#13.
+// HeatmapLayer, Legend and the full loading/error/No-Travel states come in tickets #12-#13.
 export default function App() {
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null)
   const plan = useMutation({
@@ -19,9 +20,11 @@ export default function App() {
         <p className="mt-1 mb-4 text-sm text-slate-600">Truck route safety planner</p>
         <TripForm isSubmitting={plan.isPending} onSubmit={(request) => plan.mutate(request)} />
         {plan.isSuccess && (
-          <p className="mt-4 text-sm text-slate-700">
-            {plan.data.routes.length} route(s) planned. {plan.data.recommendation_reason}
-          </p>
+          <RouteCards
+            plan={plan.data}
+            selectedRouteId={selectedRouteId}
+            onSelect={setSelectedRouteId}
+          />
         )}
         {plan.isError && (
           <p role="alert" className="mt-4 text-sm text-red-700">
