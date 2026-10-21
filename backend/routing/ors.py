@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from routing import errors
 from routing.types import LatLon, Place, Route, Step, lb_to_tonnes
 from upstream import UpstreamError, request_json
 
@@ -23,12 +24,15 @@ def geocode(query: str, api_key: str) -> list[Place]:
 
 
 def directions(origin: LatLon, destination: LatLon, load_lb: float, api_key: str) -> list[Route]:
-    data = request_json(
-        "POST",
-        DIRECTIONS_URL,
-        json=build_directions_body(origin, destination, load_lb),
-        headers={"Authorization": api_key},
-    )
+    try:
+        data = request_json(
+            "POST",
+            DIRECTIONS_URL,
+            json=build_directions_body(origin, destination, load_lb),
+            headers={"Authorization": api_key},
+        )
+    except UpstreamError as exc:
+        raise errors.from_ors(exc) from exc
     features = data.get("features") or []
     if not features:
         raise UpstreamError("ORS returned no routes")

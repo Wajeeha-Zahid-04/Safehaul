@@ -67,6 +67,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [],
     "UNAUTHENTICATED_USER": None,
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "EXCEPTION_HANDLER": "api.exceptions.handler",
     # Per-IP limits protecting upstream API quotas (spec §3).
     "DEFAULT_THROTTLE_RATES": {"plan": "30/min", "heatmap": "30/min"},
 }

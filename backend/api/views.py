@@ -1,4 +1,5 @@
-from rest_framework import status
+"""API views. Upstream and routing failures are turned into responses by api.exceptions.handler."""
+
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -12,19 +13,13 @@ from api.serializers import (
 )
 from heatmap import BBox, build_heatmap
 from routing import geocode
-from upstream import UpstreamError
-
-UPSTREAM_ERROR = {"detail": "Upstream service unavailable. Please try again."}
 
 
 class GeocodeView(APIView):
     def get(self, request: Request) -> Response:
         query = GeocodeQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
-        try:
-            places = geocode(query.validated_data["q"])
-        except UpstreamError:
-            return Response(UPSTREAM_ERROR, status=status.HTTP_502_BAD_GATEWAY)
+        places = geocode(query.validated_data["q"])
         return Response(
             {"results": [{"label": p.label, "lat": p.lat, "lon": p.lon} for p in places]}
         )
@@ -38,16 +33,13 @@ class PlanView(APIView):
         body = PlanRequestSerializer(data=request.data)
         body.is_valid(raise_exception=True)
         data = body.validated_data
-        try:
-            plan = plan_trip(
-                origin=(data["origin"]["lat"], data["origin"]["lon"]),
-                destination=(data["destination"]["lat"], data["destination"]["lon"]),
-                departure=data["departure"],
-                load_lb=data["load_lb"],
-                interval_mi=data["interval_mi"],
-            )
-        except UpstreamError:
-            return Response(UPSTREAM_ERROR, status=status.HTTP_502_BAD_GATEWAY)
+        plan = plan_trip(
+            origin=(data["origin"]["lat"], data["origin"]["lon"]),
+            destination=(data["destination"]["lat"], data["destination"]["lon"]),
+            departure=data["departure"],
+            load_lb=data["load_lb"],
+            interval_mi=data["interval_mi"],
+        )
         return Response(plan)
 
 
@@ -59,8 +51,4 @@ class HeatmapView(APIView):
         body = HeatmapRequestSerializer(data=request.data)
         body.is_valid(raise_exception=True)
         data = body.validated_data
-        try:
-            heatmap = build_heatmap(BBox(*data["bbox"]), data["start"], data["load_lb"])
-        except UpstreamError:
-            return Response(UPSTREAM_ERROR, status=status.HTTP_502_BAD_GATEWAY)
-        return Response(heatmap)
+        return Response(build_heatmap(BBox(*data["bbox"]), data["start"], data["load_lb"]))

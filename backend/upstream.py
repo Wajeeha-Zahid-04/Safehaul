@@ -12,10 +12,21 @@ ATTEMPTS = 2  # first try + 1 retry
 # Public OSM-based services (e.g. Photon) reject generic client user agents.
 USER_AGENT = "SafeHaul/1.0 (+https://github.com/Wajeeha-Zahid-04/Safehaul)"
 LOG_BODY_CHARS = 200
+KEEP_BODY_CHARS = 1000
+TOO_MANY_REQUESTS = 429
 
 
 class UpstreamError(Exception):
     """A third-party API failed or returned an unusable response."""
+
+    def __init__(self, message: str, status: int | None = None, body: str = "") -> None:
+        super().__init__(message)
+        self.status = status
+        self.body = body
+
+
+class RateLimitedError(UpstreamError):
+    """A third-party API rejected the call with 429 (e.g. Open-Meteo free-tier quota)."""
 
 
 def _log_failure(url: str, detail: str) -> None:
@@ -36,11 +47,13 @@ def request_json(
             last_error = exc
             continue
         if not response.ok:
-            _log_failure(url, f"HTTP {response.status_code} {response.text[:LOG_BODY_CHARS]}")
-            if response.status_code >= 500:
-                last_error = UpstreamError(f"{url} returned {response.status_code}")
+            status, body = response.status_code, response.text[:KEEP_BODY_CHARS]
+            _log_failure(url, f"HTTP {status} {body[:LOG_BODY_CHARS]}")
+            if status >= 500:
+                last_error = UpstreamError(f"{url} returned {status}", status, body)
                 continue
-            raise UpstreamError(f"{url} returned {response.status_code}")
+            error_class = RateLimitedError if status == TOO_MANY_REQUESTS else UpstreamError
+            raise error_class(f"{url} returned {status}", status, body)
         try:
             return response.json()
         except ValueError as exc:

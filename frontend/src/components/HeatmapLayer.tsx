@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { GeoJSONSource } from 'maplibre-gl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layer, Source, useMap, type LayerProps } from 'react-map-gl/maplibre'
-import { fetchHeatmap } from '../api/client'
+import { ApiError, fetchHeatmap } from '../api/client'
 import type { HeatmapRequest, HeatmapResponse } from '../api/types'
 import {
   heatmapColor,
@@ -26,14 +26,21 @@ const slotFormat = new Intl.DateTimeFormat(undefined, {
 
 interface Props {
   request: HeatmapRequest
+  /** Hidden layers keep their data and slider position; toggling never refetches. */
+  visible: boolean
   /** Draw the heatmap beneath this layer so route lines stay on top. */
   beforeId?: string
 }
 
-function heatmapLayer(data: HeatmapResponse): LayerProps {
+function clampToNow(iso: string): string {
+  return new Date(Math.max(Date.parse(iso), Date.now())).toISOString()
+}
+
+function heatmapLayer(data: HeatmapResponse, visible: boolean): LayerProps {
   return {
     id: 'heatmap',
     type: 'heatmap',
+    layout: { visibility: visible ? 'visible' : 'none' },
     paint: {
       'heatmap-weight': heatmapWeight,
       'heatmap-radius': heatmapRadius(data.spacing_km, meanLatitude(data)),
@@ -50,17 +57,20 @@ function heatmapLayer(data: HeatmapResponse): LayerProps {
  * requestAnimationFrame that calls setData on the MapLibre source: no refetch, no React
  * re-render of the map, at most one source update per display frame.
  */
-export function HeatmapLayer({ request, beforeId }: Props) {
+export function HeatmapLayer({ request, visible, beforeId }: Props) {
   const { current: mapRef } = useMap()
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['heatmap', request],
-    queryFn: ({ signal }) => fetchHeatmap(request, signal),
+    // Clamp to now: a Retry long after a "depart now" plan would otherwise send a past start.
+    queryFn: ({ signal }) =>
+      fetchHeatmap({ ...request, start: clampToNow(request.start) }, signal),
     staleTime: HEATMAP_STALE_MS,
-    retry: 1,
+    // A busy (503) quota won't clear in a second; let the user retry instead.
+    retry: (failures, err) => failures < 1 && !(err instanceof ApiError && err.status === 503),
   })
 
   const frames = useMemo(() => (data ? heatmapFrames(data) : null), [data])
-  const layer = useMemo(() => (data ? heatmapLayer(data) : null), [data])
+  const layer = useMemo(() => (data ? heatmapLayer(data, visible) : null), [data, visible])
   const startMs = useMemo(() => (data ? new Date(data.start).getTime() : 0), [data])
 
   const [hour, setHour] = useState(0)
@@ -94,7 +104,13 @@ export function HeatmapLayer({ request, beforeId }: Props) {
         </Source>
       )}
 
-      <div className="absolute bottom-8 left-1/2 w-[min(520px,calc(100%-2rem))] -translate-x-1/2 rounded-lg bg-white/95 p-3 shadow-lg ring-1 ring-slate-200">
+      {/* Mobile: under the legend at the top (the bottom sheet covers the bottom).
+          Desktop: centred along the bottom of the map. */}
+      <div
+        className={`absolute top-[6.75rem] right-14 left-3 rounded-lg bg-white/95 p-3 shadow-lg ring-1 ring-slate-200 md:top-auto md:right-auto md:bottom-8 md:left-1/2 md:w-[min(520px,calc(100%-2rem))] md:-translate-x-1/2 ${
+          visible ? '' : 'hidden'
+        }`}
+      >
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
             Corridor risk forecast

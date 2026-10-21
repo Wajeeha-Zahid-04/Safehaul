@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from routing import polyline
+from routing import errors, polyline
 from routing.types import LatLon, Route, Step, lb_to_tonnes
 from upstream import UpstreamError, request_json
 
@@ -12,7 +12,10 @@ KM_TO_M = 1000
 
 
 def directions(origin: LatLon, destination: LatLon, load_lb: float) -> list[Route]:
-    data = request_json("POST", ROUTE_URL, json=build_route_body(origin, destination, load_lb))
+    try:
+        data = request_json("POST", ROUTE_URL, json=build_route_body(origin, destination, load_lb))
+    except UpstreamError as exc:
+        raise errors.from_valhalla(exc) from exc
     try:
         trips = [data["trip"], *(alt["trip"] for alt in data.get("alternates", []))]
         return [_parse_trip(i, trip) for i, trip in enumerate(trips)]

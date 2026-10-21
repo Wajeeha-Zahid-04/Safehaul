@@ -15,9 +15,18 @@ import { maplibrePromise } from '../lib/maplibre'
 import { riskColorExpression } from '../lib/risk'
 import { CheckpointPopup } from './CheckpointPopup'
 import { HeatmapLayer } from './HeatmapLayer'
+import { Legend } from './Legend'
 
 const INITIAL_VIEW = { longitude: -96, latitude: 39, zoom: 3.5 }
-const FIT_PADDING = 60
+const MOBILE_QUERY = '(max-width: 767px)' // below Tailwind's `md`
+
+/** Keep fitted routes clear of the overlays: legend + heatmap panel, and the mobile sheet. */
+function fitPadding() {
+  if (window.matchMedia(MOBILE_QUERY).matches) {
+    return { top: 230, bottom: Math.round(window.innerHeight * 0.42), left: 24, right: 24 }
+  }
+  return { top: 60, bottom: 150, left: 200, right: 60 }
+}
 const CHECKPOINT_LAYER = 'checkpoints'
 const ROUTE_CASING_LAYER = 'route-casing'
 
@@ -84,6 +93,7 @@ export const MapView = memo(function MapView({ plan, selectedRouteId, heatmapReq
   const mapRef = useRef<MapRef>(null)
   const [popup, setPopup] = useState<PopupTarget | null>(null)
   const [hovering, setHovering] = useState(false)
+  const [showHeatmap, setShowHeatmap] = useState(true)
 
   // GeoJSON depends only on the plan, so switching routes never re-uploads source data.
   const segments = useMemo(() => (plan ? routeSegments(plan) : null), [plan])
@@ -92,7 +102,7 @@ export const MapView = memo(function MapView({ plan, selectedRouteId, heatmapReq
   const circles = useMemo(() => checkpointLayer(selectedRouteId), [selectedRouteId])
 
   useEffect(() => {
-    if (plan) mapRef.current?.fitBounds(planBounds(plan), { padding: FIT_PADDING, duration: 800 })
+    if (plan) mapRef.current?.fitBounds(planBounds(plan), { padding: fitPadding(), duration: 800 })
   }, [plan])
 
   // Popup only for a checkpoint on the selected route of the current plan.
@@ -136,9 +146,15 @@ export const MapView = memo(function MapView({ plan, selectedRouteId, heatmapReq
         <HeatmapLayer
           key={JSON.stringify(heatmapRequest)}
           request={heatmapRequest}
+          visible={showHeatmap}
           beforeId={ROUTE_CASING_LAYER}
         />
       )}
+      <Legend
+        heatmapAvailable={heatmapRequest !== null}
+        heatmapOn={showHeatmap}
+        onToggleHeatmap={() => setShowHeatmap((on) => !on)}
+      />
       {popupCheckpoint && (
         <CheckpointPopup checkpoint={popupCheckpoint} onClose={() => setPopup(null)} />
       )}

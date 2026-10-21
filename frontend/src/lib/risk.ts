@@ -1,6 +1,16 @@
 import type { ExpressionSpecification } from 'maplibre-gl'
 import type { RiskLevel } from '../api/types'
 
+export const RISK_LEVELS: RiskLevel[] = [0, 1, 2, 3, 4]
+
+export const RISK_LABELS: Record<RiskLevel, string> = {
+  0: 'Low',
+  1: 'Moderate',
+  2: 'High',
+  3: 'Severe',
+  4: 'No Travel',
+}
+
 // Spec §4 Legend: Low green, Moderate yellow, High orange, Severe red, No Travel purple/black.
 export const RISK_COLORS: Record<RiskLevel, string> = {
   0: '#16a34a',
