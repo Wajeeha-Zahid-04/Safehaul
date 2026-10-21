@@ -41,6 +41,11 @@ export function checkpointPoints(plan: PlanResponse): FeatureCollection<Point, C
   }
 }
 
+/** [[west, south], [east, north]] -> GeoJSON bbox [min_lon, min_lat, max_lon, max_lat]. */
+export function toBBox([[w, s], [e, n]]: Bounds): [number, number, number, number] {
+  return [w, s, e, n]
+}
+
 /** Union of all route bboxes as [[west, south], [east, north]]. */
 export function planBounds(plan: PlanResponse): Bounds {
   const [first, ...rest] = plan.routes.map((r) => r.bbox)

@@ -1,17 +1,32 @@
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { planTrip } from './api/client'
+import type { HeatmapRequest } from './api/types'
 import { MapView } from './components/MapView'
 import { RouteCards } from './components/RouteCards'
 import { TripForm } from './components/TripForm'
+import { planBounds, toBBox } from './lib/geojson'
 
-// HeatmapLayer, Legend and the full loading/error/No-Travel states come in tickets #12-#13.
+// Legend, heatmap toggle and the full loading/error/No-Travel states come in ticket #13.
 export default function App() {
   const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null)
   const plan = useMutation({
     mutationFn: planTrip,
     onSuccess: (data) => setSelectedRouteId(data.recommended_id),
   })
+
+  // Heatmap covers every route, starts at the trip's departure and uses the trip's load.
+  const heatmapRequest = useMemo<HeatmapRequest | null>(
+    () =>
+      plan.data && plan.variables
+        ? {
+            bbox: toBBox(planBounds(plan.data)),
+            start: plan.variables.departure,
+            load_lb: plan.variables.load_lb,
+          }
+        : null,
+    [plan.data, plan.variables],
+  )
 
   return (
     <div className="flex h-screen w-screen">
@@ -33,7 +48,11 @@ export default function App() {
         )}
       </aside>
       <main className="relative flex-1">
-        <MapView plan={plan.data} selectedRouteId={selectedRouteId} />
+        <MapView
+          plan={plan.data}
+          selectedRouteId={selectedRouteId}
+          heatmapRequest={heatmapRequest}
+        />
       </main>
     </div>
   )

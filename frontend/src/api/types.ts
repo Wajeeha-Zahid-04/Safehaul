@@ -52,6 +52,20 @@ export interface RouteResult {
   checkpoints: CheckpointResult[]
 }
 
+export interface HeatmapRequest {
+  bbox: [number, number, number, number] // [min_lon, min_lat, max_lon, max_lat]
+  start: string // ISO 8601
+  load_lb: number
+}
+
+export interface HeatmapResponse {
+  start: string // first hour (UTC, ISO); frame h is start + h hours
+  hours: number // 49 (0..48)
+  spacing_km: number
+  points: [number, number][] // [lat, lon]
+  scores: (RiskLevel | null)[][] // scores[hour][point]; null = no forecast
+}
+
 export interface PlanResponse {
   recommended_id: number
   recommendation_reason: string

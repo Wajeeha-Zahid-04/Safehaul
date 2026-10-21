@@ -8,20 +8,23 @@ import Map, {
   type MapLayerMouseEvent,
   type MapRef,
 } from 'react-map-gl/maplibre'
-import type { PlanResponse } from '../api/types'
+import type { HeatmapRequest, PlanResponse } from '../api/types'
 import { MAP_STYLE_URL } from '../config'
 import { checkpointPoints, planBounds, routeSegments } from '../lib/geojson'
 import { maplibrePromise } from '../lib/maplibre'
 import { riskColorExpression } from '../lib/risk'
 import { CheckpointPopup } from './CheckpointPopup'
+import { HeatmapLayer } from './HeatmapLayer'
 
 const INITIAL_VIEW = { longitude: -96, latitude: 39, zoom: 3.5 }
 const FIT_PADDING = 60
 const CHECKPOINT_LAYER = 'checkpoints'
+const ROUTE_CASING_LAYER = 'route-casing'
 
 interface Props {
   plan: PlanResponse | undefined
   selectedRouteId: number | null
+  heatmapRequest: HeatmapRequest | null
 }
 
 interface PopupTarget {
@@ -40,7 +43,7 @@ function routeLayers(selectedRouteId: number | null): LayerProps[] {
   const sortKey: ExpressionSpecification = ['case', selected, 1, 0]
   return [
     {
-      id: 'route-casing',
+      id: ROUTE_CASING_LAYER,
       type: 'line',
       layout: { 'line-join': 'round', 'line-cap': 'round', 'line-sort-key': sortKey },
       paint: {
@@ -77,7 +80,7 @@ function checkpointLayer(selectedRouteId: number | null): LayerProps {
 }
 
 // Memoised so panel-only state changes (form typing, card hover) never re-render the map.
-export const MapView = memo(function MapView({ plan, selectedRouteId }: Props) {
+export const MapView = memo(function MapView({ plan, selectedRouteId, heatmapRequest }: Props) {
   const mapRef = useRef<MapRef>(null)
   const [popup, setPopup] = useState<PopupTarget | null>(null)
   const [hovering, setHovering] = useState(false)
@@ -127,6 +130,14 @@ export const MapView = memo(function MapView({ plan, selectedRouteId }: Props) {
         <Source id="checkpoints" type="geojson" data={points}>
           <Layer {...circles} />
         </Source>
+      )}
+      {heatmapRequest && segments && (
+        // Keyed by request so a new plan remounts it: fresh query, slider back to hour 0.
+        <HeatmapLayer
+          key={JSON.stringify(heatmapRequest)}
+          request={heatmapRequest}
+          beforeId={ROUTE_CASING_LAYER}
+        />
       )}
       {popupCheckpoint && (
         <CheckpointPopup checkpoint={popupCheckpoint} onClose={() => setPopup(null)} />

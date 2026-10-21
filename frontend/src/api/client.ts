@@ -1,5 +1,11 @@
 import { API_BASE_URL } from '../config'
-import type { Place, PlanRequest, PlanResponse } from './types'
+import type {
+  HeatmapRequest,
+  HeatmapResponse,
+  Place,
+  PlanRequest,
+  PlanResponse,
+} from './types'
 
 export class ApiError extends Error {
   readonly status: number
@@ -45,4 +51,12 @@ export async function geocode(query: string, signal?: AbortSignal): Promise<Plac
 
 export function planTrip(body: PlanRequest): Promise<PlanResponse> {
   return request<PlanResponse>('/api/plan', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function fetchHeatmap(body: HeatmapRequest, signal?: AbortSignal): Promise<HeatmapResponse> {
+  return request<HeatmapResponse>('/api/heatmap', {
+    method: 'POST',
+    body: JSON.stringify(body),
+    signal,
+  })
 }

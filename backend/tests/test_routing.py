@@ -250,6 +250,16 @@ def test_retries_once_on_connection_error_then_fails() -> None:
 
 
 @responses.activate
+def test_failures_are_logged_without_query_string(caplog: pytest.LogCaptureFixture) -> None:
+    responses.get(ors.GEOCODE_URL, status=429, body='{"error": "rate limited"}')
+    with pytest.raises(UpstreamError):
+        ors.geocode("Chicago", "super-secret-key")
+    assert "HTTP 429" in caplog.text
+    assert "rate limited" in caplog.text
+    assert "super-secret-key" not in caplog.text
+
+
+@responses.activate
 def test_client_errors_are_not_retried() -> None:
     responses.post(ors.DIRECTIONS_URL, status=400, json={"error": "bad"})
     with pytest.raises(UpstreamError):
