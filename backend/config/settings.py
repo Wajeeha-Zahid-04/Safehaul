@@ -24,6 +24,16 @@ ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 ORS_API_KEY = os.environ.get("ORS_API_KEY", "")
 
+# Redis when REDIS_URL is set, otherwise in-process LocMem (spec §2 Caching).
+REDIS_URL = os.environ.get("REDIS_URL", "")
+CACHES = {
+    "default": (
+        {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}
+        if REDIS_URL
+        else {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    )
+}
+
 INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",

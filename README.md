@@ -98,6 +98,8 @@ _TBD (ticket #16): gusts shown but not scored, No-Travel ranking, mile attributi
 
 - **Keyless routing fallback.** OpenRouteService is implemented as specified (`backend/routing/ors.py`: `driving-hgv`, `alternative_routes.target_count = 3`, weight restriction in tonnes) and is used whenever `ORS_API_KEY` is set. During development, ORS sign-up was unavailable (openrouteservice.org outage, and the HeiGIT account captcha kept failing), so when no key is configured the backend falls back to the public **Valhalla** server (`truck` costing, weight restriction, 2 alternates = up to 3 routes) and **Photon** for geocoding. Both providers are normalised to the same `Route` shape, so nothing downstream changes.
 - Both ORS and Valhalla return *up to* 3 routes; when fewer real alternatives exist, fewer are shown.
+- **Snowfall units.** The spec says snowfall arrives in cm/hr and is divided by 2.54. With `precipitation_unit=inch` (also in the spec), Open-Meteo already returns snowfall in inches, so dividing again would understate snow by 2.54×. The client converts using the units Open-Meteo reports in `hourly_units` (`cm` → ÷2.54, `inch` → as-is).
+- **Rain value scored.** The "Rain in/hr" risk column uses Open-Meteo `rain` (liquid). `precipitation` also includes the water equivalent of snow, so scoring it would partly count snow twice. It is still returned and shown.
 
 ## API
 
