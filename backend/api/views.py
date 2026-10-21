@@ -5,7 +5,12 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from api.planner import plan_trip
-from api.serializers import GeocodeQuerySerializer, PlanRequestSerializer
+from api.serializers import (
+    GeocodeQuerySerializer,
+    HeatmapRequestSerializer,
+    PlanRequestSerializer,
+)
+from heatmap import BBox, build_heatmap
 from routing import geocode
 from upstream import UpstreamError
 
@@ -44,3 +49,18 @@ class PlanView(APIView):
         except UpstreamError:
             return Response(UPSTREAM_ERROR, status=status.HTTP_502_BAD_GATEWAY)
         return Response(plan)
+
+
+class HeatmapView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "heatmap"
+
+    def post(self, request: Request) -> Response:
+        body = HeatmapRequestSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        data = body.validated_data
+        try:
+            heatmap = build_heatmap(BBox(*data["bbox"]), data["start"], data["load_lb"])
+        except UpstreamError:
+            return Response(UPSTREAM_ERROR, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(heatmap)
