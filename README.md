@@ -94,6 +94,11 @@ The checkpoint level is the maximum across all conditions after overrides. `reas
 
 _TBD (ticket #16): gusts shown but not scored, No-Travel ranking, mile attribution._
 
+## Deviations from spec
+
+- **Keyless routing fallback.** OpenRouteService is implemented as specified (`backend/routing/ors.py`: `driving-hgv`, `alternative_routes.target_count = 3`, weight restriction in tonnes) and is used whenever `ORS_API_KEY` is set. During development, ORS sign-up was unavailable (openrouteservice.org outage, and the HeiGIT account captcha kept failing), so when no key is configured the backend falls back to the public **Valhalla** server (`truck` costing, weight restriction, 2 alternates = up to 3 routes) and **Photon** for geocoding. Both providers are normalised to the same `Route` shape, so nothing downstream changes.
+- Both ORS and Valhalla return *up to* 3 routes; when fewer real alternatives exist, fewer are shown.
+
 ## API
 
 _TBD (ticket #16): `GET /api/geocode`, `POST /api/plan`, `POST /api/heatmap`._
