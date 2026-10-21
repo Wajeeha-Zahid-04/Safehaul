@@ -94,6 +94,9 @@ The checkpoint level is the maximum across all conditions after overrides. `reas
 
 _TBD (ticket #16): gusts shown but not scored, No-Travel ranking, mile attribution._
 
+- **Average risk score** (sort key #4) is mile-weighted: Σ(score × owned miles) / route miles, so a short final segment doesn't count as much as a full interval.
+- **Ranking ties.** Mile and score keys are compared after rounding (0.01 mi, 0.0001 score) so float noise can't break a real tie; a full tie falls back to route id for a deterministic result.
+
 ## Deviations from spec
 
 - **Keyless routing fallback.** OpenRouteService is implemented as specified (`backend/routing/ors.py`: `driving-hgv`, `alternative_routes.target_count = 3`, weight restriction in tonnes) and is used whenever `ORS_API_KEY` is set. During development, ORS sign-up was unavailable (openrouteservice.org outage, and the HeiGIT account captcha kept failing), so when no key is configured the backend falls back to the public **Valhalla** server (`truck` costing, weight restriction, 2 alternates = up to 3 routes) and **Photon** for geocoding. Both providers are normalised to the same `Route` shape, so nothing downstream changes.
