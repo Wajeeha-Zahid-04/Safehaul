@@ -1,10 +1,16 @@
 import { useMutation } from '@tanstack/react-query'
+import { useState } from 'react'
 import { planTrip } from './api/client'
+import { MapView } from './components/MapView'
 import { TripForm } from './components/TripForm'
 
-// RouteCards, MapView and HeatmapLayer are added in tickets #10-#13.
+// RouteCards and HeatmapLayer are added in tickets #11-#13.
 export default function App() {
-  const plan = useMutation({ mutationFn: planTrip })
+  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null)
+  const plan = useMutation({
+    mutationFn: planTrip,
+    onSuccess: (data) => setSelectedRouteId(data.recommended_id),
+  })
 
   return (
     <div className="flex h-screen w-screen">
@@ -23,7 +29,9 @@ export default function App() {
           </p>
         )}
       </aside>
-      <main className="flex-1" />
+      <main className="relative flex-1">
+        <MapView plan={plan.data} selectedRouteId={selectedRouteId} />
+      </main>
     </div>
   )
 }
