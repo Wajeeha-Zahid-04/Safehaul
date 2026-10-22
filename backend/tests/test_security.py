@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import pytest
 from django.test import Client, override_settings
 from django.urls import path
 from rest_framework.response import Response
@@ -160,10 +161,18 @@ def test_unhandled_error_is_generic_json_without_details() -> None:
     assert "Traceback" not in res.content.decode()
 
 
-def test_render_hostname_is_allowed_automatically() -> None:
-    env = {**PROD_ENV, "RENDER_EXTERNAL_HOSTNAME": "safehaul-api-x1y2.onrender.com"}
-    hosts = shell_print("from django.conf import settings; print(*settings.ALLOWED_HOSTS)", env)
-    assert hosts.split() == ["safehaul-api.onrender.com", "safehaul-api-x1y2.onrender.com"]
+@pytest.mark.parametrize(
+    ("var", "host"),
+    [
+        ("RENDER_EXTERNAL_HOSTNAME", "safehaul-api-x1y2.onrender.com"),
+        ("RAILWAY_PUBLIC_DOMAIN", "safehaul-production.up.railway.app"),
+    ],
+)
+def test_platform_hostname_is_allowed_automatically(var: str, host: str) -> None:
+    hosts = shell_print(
+        "from django.conf import settings; print(*settings.ALLOWED_HOSTS)", {**PROD_ENV, var: host}
+    )
+    assert hosts.split() == ["safehaul-api.onrender.com", host]
 
 
 def test_debug_is_off_unless_explicitly_enabled() -> None:
