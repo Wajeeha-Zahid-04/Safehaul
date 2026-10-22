@@ -166,7 +166,8 @@ def test_unhandled_error_is_generic_json_without_details() -> None:
     [
         ("RENDER_EXTERNAL_HOSTNAME", "safehaul-api-x1y2.onrender.com"),
         ("RAILWAY_PUBLIC_DOMAIN", "safehaul-production.up.railway.app"),
-        ("SPACE_HOST", "wajeeha-zahid-04-safehaul-api.hf.space"),
+        ("VERCEL_PROJECT_PRODUCTION_URL", "safehaul-api.vercel.app"),
+        ("VERCEL_URL", "safehaul-api-abc123-team.vercel.app"),
     ],
 )
 def test_platform_hostname_is_allowed_automatically(var: str, host: str) -> None:
@@ -176,6 +177,13 @@ def test_platform_hostname_is_allowed_automatically(var: str, host: str) -> None
     assert hosts.split() == ["safehaul-api.onrender.com", host]
 
 
+def test_wsgi_exposes_app_for_vercel() -> None:
+    from config import wsgi
+
+    assert callable(wsgi.app)
+    assert wsgi.app is wsgi.application
+
+
 def test_debug_is_off_unless_explicitly_enabled() -> None:
     # Empty value = not enabled (an exported empty var also stops .env from setting it).
     env = {**PROD_ENV, "DJANGO_DEBUG": ""}
@@ -183,6 +191,9 @@ def test_debug_is_off_unless_explicitly_enabled() -> None:
 
 
 def test_env_file_is_git_ignored() -> None:
-    ignored = (BACKEND_DIR.parent / ".gitignore").read_text().splitlines()
+    gitignore = BACKEND_DIR.parent / ".gitignore"
+    if not gitignore.exists():
+        pytest.skip("backend-only checkout (e.g. a container build); no repo-root .gitignore")
+    ignored = gitignore.read_text().splitlines()
     assert ".env" in ignored
     assert "!.env.example" in ignored

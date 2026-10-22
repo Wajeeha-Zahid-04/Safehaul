@@ -22,7 +22,14 @@ SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 # Hosting platforms inject the service's public hostname; no manual ALLOWED_HOSTS edit needed.
-for platform_host_var in ("RENDER_EXTERNAL_HOSTNAME", "RAILWAY_PUBLIC_DOMAIN", "SPACE_HOST"):
+PLATFORM_HOST_VARS = (
+    "VERCEL_PROJECT_PRODUCTION_URL",  # e.g. safehaul-api.vercel.app
+    "VERCEL_BRANCH_URL",
+    "VERCEL_URL",  # per-deployment URL
+    "RENDER_EXTERNAL_HOSTNAME",
+    "RAILWAY_PUBLIC_DOMAIN",
+)
+for platform_host_var in PLATFORM_HOST_VARS:
     if platform_host := os.environ.get(platform_host_var):
         ALLOWED_HOSTS.append(platform_host)
 

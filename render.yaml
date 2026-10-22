@@ -1,4 +1,4 @@
-# Render Blueprint for the SafeHaul API (spec §2 Hosting). New > Blueprint > pick this repo.
+# Render Blueprint for the SafeHaul API (spec section 2, Hosting). New > Blueprint > this repo.
 services:
   - type: web
     name: safehaul-api
@@ -9,7 +9,7 @@ services:
     startCommand: gunicorn config.wsgi:application
     envVars:
       - key: PYTHON_VERSION
-        value: "3.13.5"
+        value: "3.12.10"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_DEBUG

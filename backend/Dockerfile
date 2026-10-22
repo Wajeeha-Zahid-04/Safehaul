@@ -1,6 +1,6 @@
 # SafeHaul API image: one long-running gunicorn process (settings in gunicorn.conf.py).
-# Runs anywhere that runs containers (Hugging Face Spaces, Render, Railway, Fly, ...).
-FROM python:3.13-slim
+# Runs on any container host (Render, Railway, Fly, ...); the live deploy uses Vercel instead.
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
