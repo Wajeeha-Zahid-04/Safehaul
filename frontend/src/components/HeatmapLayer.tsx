@@ -5,6 +5,7 @@ import { Layer, Source, useMap, type LayerProps } from 'react-map-gl/maplibre'
 import { ApiError, fetchHeatmap } from '../api/client'
 import type { HeatmapRequest, HeatmapResponse } from '../api/types'
 import {
+  HEATMAP_INTENSITY,
   heatmapColor,
   heatmapFrames,
   heatmapRadius,
@@ -44,9 +45,9 @@ function heatmapLayer(data: HeatmapResponse, visible: boolean): LayerProps {
     paint: {
       'heatmap-weight': heatmapWeight,
       'heatmap-radius': heatmapRadius(data.spacing_km, meanLatitude(data)),
-      'heatmap-intensity': 0.5,
+      'heatmap-intensity': HEATMAP_INTENSITY,
       'heatmap-color': heatmapColor,
-      'heatmap-opacity': 0.65,
+      'heatmap-opacity': 0.75,
     },
   }
 }
@@ -72,6 +73,12 @@ export function HeatmapLayer({ request, visible, beforeId }: Props) {
   const frames = useMemo(() => (data ? heatmapFrames(data) : null), [data])
   const layer = useMemo(() => (data ? heatmapLayer(data, visible) : null), [data, visible])
   const startMs = useMemo(() => (data ? new Date(data.start).getTime() : 0), [data])
+  // Frames only contain Moderate-or-worse cells, so a frame's size is its elevated-cell count.
+  const elevated = useMemo(() => frames?.map((f) => f.features.length) ?? [], [frames])
+  const peakHour = useMemo(
+    () => elevated.reduce((best, n, h) => (n > elevated[best] ? h : best), 0),
+    [elevated],
+  )
 
   const [hour, setHour] = useState(0)
   const targetHour = useRef(0)
@@ -161,6 +168,24 @@ export function HeatmapLayer({ request, visible, beforeId }: Props) {
                 <span key={t}>{t} h</span>
               ))}
             </div>
+            <p className="mt-1.5 text-xs text-slate-600" aria-live="polite">
+              {elevated[peakHour] === 0 ? (
+                'No Moderate-or-worse weather in this corridor over the next 48 h.'
+              ) : elevated[hour] > 0 ? (
+                `${elevated[hour]} area${elevated[hour] === 1 ? '' : 's'} at Moderate or worse.`
+              ) : (
+                <>
+                  Calm at this hour.{' '}
+                  <button
+                    type="button"
+                    onClick={() => showHour(peakHour)}
+                    className="font-medium text-sky-700 underline hover:text-sky-900"
+                  >
+                    Jump to busiest hour (+{peakHour} h)
+                  </button>
+                </>
+              )}
+            </p>
           </>
         )}
       </div>
