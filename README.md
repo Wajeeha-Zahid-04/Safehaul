@@ -8,7 +8,7 @@ SafeHaul helps a truck driver pick the safest of up to three routes. Every route
 |---|---|
 | **Live app** | https://safehaul-j4uk.vercel.app |
 | **API** | https://safehaul-two.vercel.app (try [`/api/geocode?q=Denver`](https://safehaul-two.vercel.app/api/geocode?q=Denver)) |
-| **Loom walkthrough** | _TBD (ticket #17)_ |
+| **Loom walkthrough** | https://www.loom.com/share/1b150aa953064a2581c991642a28c257 |
 
 **Contents:** [Features](#features) · [How it works](#how-it-works) · [Risk model](#risk-model) · [Recommendation](#recommendation) · [Assumptions](#assumptions) · [Deviations from spec](#deviations-from-spec) · [API](#api) · [Testing](#testing) · [Security](#security) · [Performance](#performance) · [Local setup](#local-setup) · [Deployment](#deployment) · [Environment variables](#environment-variables) · [Project structure](#project-structure)
 
