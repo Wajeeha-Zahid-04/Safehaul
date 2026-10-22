@@ -4,7 +4,8 @@ Helps a truck driver pick the safest of 3 routes using forecast weather at each 
 
 > **Disclaimer:** SafeHaul is a decision aid, not an official safety clearance.
 
-- **Live app:** _TBD (ticket #15)_
+- **Live app:** https://safehaul-j4uk.vercel.app
+- **API:** https://safehaul-two.vercel.app (e.g. [`/api/geocode?q=Denver`](https://safehaul-two.vercel.app/api/geocode?q=Denver))
 - **Loom walkthrough:** _TBD (ticket #17)_
 
 ## Stack
