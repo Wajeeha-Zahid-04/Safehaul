@@ -1,0 +1,25 @@
+# Render Blueprint for the SafeHaul API (spec §2 Hosting). New > Blueprint > pick this repo.
+services:
+  - type: web
+    name: safehaul-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn config.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "False"
+      # Render's load balancer is the one proxy in front of the app (per-IP throttling).
+      - key: DJANGO_NUM_PROXIES
+        value: "1"
+      # The Vercel URL, e.g. https://safehaul.vercel.app (set after the frontend deploys).
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      # Optional. Empty -> keyless Valhalla/Photon fallback.
+      - key: ORS_API_KEY
+        sync: false

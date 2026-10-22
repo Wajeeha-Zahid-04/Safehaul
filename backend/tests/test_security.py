@@ -160,6 +160,12 @@ def test_unhandled_error_is_generic_json_without_details() -> None:
     assert "Traceback" not in res.content.decode()
 
 
+def test_render_hostname_is_allowed_automatically() -> None:
+    env = {**PROD_ENV, "RENDER_EXTERNAL_HOSTNAME": "safehaul-api-x1y2.onrender.com"}
+    hosts = shell_print("from django.conf import settings; print(*settings.ALLOWED_HOSTS)", env)
+    assert hosts.split() == ["safehaul-api.onrender.com", "safehaul-api-x1y2.onrender.com"]
+
+
 def test_debug_is_off_unless_explicitly_enabled() -> None:
     # Empty value = not enabled (an exported empty var also stops .env from setting it).
     env = {**PROD_ENV, "DJANGO_DEBUG": ""}
