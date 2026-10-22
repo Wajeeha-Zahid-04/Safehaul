@@ -166,6 +166,7 @@ def test_unhandled_error_is_generic_json_without_details() -> None:
     [
         ("RENDER_EXTERNAL_HOSTNAME", "safehaul-api-x1y2.onrender.com"),
         ("RAILWAY_PUBLIC_DOMAIN", "safehaul-production.up.railway.app"),
+        ("SPACE_HOST", "wajeeha-zahid-04-safehaul-api.hf.space"),
     ],
 )
 def test_platform_hostname_is_allowed_automatically(var: str, host: str) -> None:

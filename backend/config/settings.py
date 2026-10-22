@@ -21,8 +21,8 @@ def env_list(name: str, default: str = "") -> list[str]:
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-# Render and Railway inject the service's public hostname; no manual ALLOWED_HOSTS edit needed.
-for platform_host_var in ("RENDER_EXTERNAL_HOSTNAME", "RAILWAY_PUBLIC_DOMAIN"):
+# Hosting platforms inject the service's public hostname; no manual ALLOWED_HOSTS edit needed.
+for platform_host_var in ("RENDER_EXTERNAL_HOSTNAME", "RAILWAY_PUBLIC_DOMAIN", "SPACE_HOST"):
     if platform_host := os.environ.get(platform_host_var):
         ALLOWED_HOSTS.append(platform_host)
 
