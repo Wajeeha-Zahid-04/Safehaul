@@ -52,6 +52,9 @@ MIDDLEWARE = [
     "django.middleware.gzip.GZipMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    # No cookies/sessions exist, and DRF views are CSRF-exempt by design; kept as defence in depth.
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -60,7 +63,34 @@ WSGI_APPLICATION = "config.wsgi.application"
 # No accounts and no persisted data (spec §3), so no database is configured.
 DATABASES: dict = {}
 
+# --- Security (spec §3) ---
+
+# HTTPS hardening is on whenever DEBUG is off; DJANGO_SECURE_HTTPS=False allows plain-HTTP
+# local runs of a production-like config.
+SECURE_HTTPS = env_bool("DJANGO_SECURE_HTTPS", default=not DEBUG)
+if SECURE_HTTPS:
+    SECURE_SSL_REDIRECT = True
+    # Render/Railway terminate TLS at their proxy and forward the original scheme.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+# HSTS preload needs a domain we own; a *.onrender.com subdomain can't be submitted.
+SILENCED_SYSTEM_CHECKS = ["security.W021"]
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+# Requests are small JSON bodies; reject anything larger early.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024
+
+# CORS: only the frontend origin(s), only the API, only the methods the API uses.
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
+CORS_URLS_REGEX = r"^/api/.*$"
+CORS_ALLOW_METHODS = ["GET", "POST", "OPTIONS"]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
@@ -70,6 +100,17 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "api.exceptions.handler",
     # Per-IP limits protecting upstream API quotas (spec §3).
     "DEFAULT_THROTTLE_RATES": {"plan": "30/min", "heatmap": "30/min"},
+    # Trusted reverse proxies in front of the app (1 on Render). The client IP is taken from
+    # that position in X-Forwarded-For, so a spoofed header can't dodge the throttle.
+    "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "0")),
+}
+
+# Upstream failures are logged as warnings (no stack traces reach clients).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": "WARNING"},
 }
 
 LANGUAGE_CODE = "en-us"
