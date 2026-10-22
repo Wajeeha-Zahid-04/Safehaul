@@ -1,0 +1,8 @@
+# Tool settings live here and in pytest.ini (not pyproject.toml): Vercel's Python builder treats
+# a pyproject.toml as the dependency manifest, while dependencies are in requirements.txt.
+line-length = 100
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
