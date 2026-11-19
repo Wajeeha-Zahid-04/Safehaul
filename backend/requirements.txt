@@ -4,5 +4,5 @@ django-cors-headers==4.9.0
 python-dotenv==1.2.4
 redis==8.1.0
 requests==2.34.2
-gunicorn==26.2.0
+gunicorn==27.0.1
 whitenoise==6.12.0
